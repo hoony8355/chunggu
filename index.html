@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>청구서 자동 생성기</title>
+    <style>
+        body { font-family: sans-serif; padding: 2em; }
+        label { font-weight: bold; display: block; margin-top: 1em; }
+        .media-block { margin-top: 0.5em; }
+    </style>
+</head>
+<body>
+    <h2>청구서 자동 생성기</h2>
+
+    <form id="invoiceForm">
+        <label>클라이언트명:
+            <select id="client">
+                <option value="더마초이스">더마초이스</option>
+                <option value="페오펫">페오펫</option>
+            </select>
+        </label>
+
+        <label>집행 매체 선택:</label>
+        <div class="media-block">
+            <input type="checkbox" name="media" value="메타"> 메타<br>
+            <input type="checkbox" name="media" value="네이버 SA"> 네이버 SA<br>
+            <input type="checkbox" name="media" value="네이버 GFA"> 네이버 GFA<br>
+            <input type="checkbox" name="media" value="구글"> 구글<br>
+        </div>
+
+        <div id="amountInputs"></div>
+
+        <button type="button" onclick="generate()">청구서 데이터 생성</button>
+    </form>
+
+    <pre id="output" style="margin-top: 2em; background: #f9f9f9; padding: 1em;"></pre>
+
+    <script>
+        const mediaList = ['메타', '네이버 SA', '네이버 GFA', '구글'];
+
+        document.querySelectorAll('input[name="media"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const container = document.getElementById('amountInputs');
+                container.innerHTML = '';
+                document.querySelectorAll('input[name="media"]:checked').forEach(item => {
+                    const label = document.createElement('label');
+                    label.innerText = item.value + ' 집행 금액 (₩):';
+                    const inputEl = document.createElement('input');
+                    inputEl.type = 'number';
+                    inputEl.name = 'amount_' + item.value;
+                    inputEl.required = true;
+                    container.appendChild(label);
+                    container.appendChild(inputEl);
+                });
+            });
+        });
+
+        function generate() {
+            const client = document.getElementById('client').value;
+            const checked = Array.from(document.querySelectorAll('input[name="media"]:checked'))
+                                  .map(el => el.value);
+
+            const output = [];
+            let totalSupply = 0, totalVat = 0, totalSum = 0;
+
+            checked.forEach(media => {
+                const amount = parseFloat(document.querySelector(`[name="amount_${media}"]`).value || 0);
+                let supply = 0, vat = 0, total = 0;
+
+                // 모든 매체 동일하게 공급가/부가세 계산
+                supply = Math.round(amount / 1.1);
+                vat = amount - supply;
+                total = amount;
+
+                output.push(`${media} | 공급가: ${supply.toLocaleString()} | 부가세: ${vat.toLocaleString()} | 합계: ${total.toLocaleString()}`);
+                totalSupply += supply;
+                totalVat += vat;
+                totalSum += total;
+            });
+
+            output.push(`\n총 공급가액: ${totalSupply.toLocaleString()} | 총 부가세: ${totalVat.toLocaleString()} | 총 합계: ${totalSum.toLocaleString()}`);
+
+            document.getElementById('output').innerText = `클라이언트: ${client}\n\n` + output.join('\n');
+        }
+    </script>
+</body>
+</html>
